@@ -1,0 +1,42 @@
+{
+  "name": "scan.meowhan.site",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Mocha1530/scan#readme",
+  "bugs": {
+    "url": "https://github.com/Mocha1530/scan/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mocha1530/scan.git"
+  },
+  "license": "MIT",
+  "author": "Mocha1530 <yohan@meowhan.site>",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "dev": "nodemon src/main.ts",
+    "lint": "prettier --write \"src/**/*.ts\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@fastify/cors": "^8.5.0",
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.5.3",
+    "axios": "^1.0.0",
+    "chalk": "4.1.2",
+    "dotenv": "^16.0.3",
+    "fastify": "^4.10.2",
+    "ioredis": "^5.2.4",
+    "reconnecting-websocket": "^4.4.0",
+    "sharp": "^0.34.5",
+    "ts-node": "^10.9.1",
+    "ws": "^8.8.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.13",
+    "nodemon": "3.0.1",
+    "prettier": "^3.0.0",
+    "typescript": "5.3.3"
+  }
+}
