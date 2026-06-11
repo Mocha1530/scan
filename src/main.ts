@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
 import fs from 'fs';
 
+import v1Routes from './routes/v1';
 import chalk from 'chalk';
 import Utils from './utils';
 
@@ -124,6 +125,7 @@ const fastify = Fastify({
     console.log(chalk.green(`Redis connected. Default Cache TTL: ${REDIS_TTL} seconds`));
   }
 
+  await fastify.register(v1Routes, { prefix: '/v1' });
   await fastify.register(Utils, { prefix: '/utils' });
 
   try {

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",
+    "@supabase/supabase-js": "^2.108.1",
     "@types/node": "^24.0.0",
     "@types/ws": "^8.5.3",
     "axios": "^1.0.0",
