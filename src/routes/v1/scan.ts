@@ -193,8 +193,9 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
         }
 
         const isScam = await isScamImage(buffer);
-
-        await insertNewImage(sha256, phash, isScam, imageInput);
+        if (isScam) {
+          await insertNewImage(sha256, phash, isScam, imageInput);
+        }
         if (useCache) {
           await cache.set(
             redis as Redis,
