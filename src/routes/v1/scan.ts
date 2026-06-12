@@ -3,11 +3,24 @@ import { FastifyReply, FastifyInstance, RegisterOptions, FastifyRequest } from '
 import cache from '../../utils/cache';
 import { redis, REDIS_TTL } from '../../main';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI, Type } from '@google/genai';
 import Redis from 'ioredis';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const scamSchema = {
+  type: Type.OBJECT,
+  properties: {
+    isScam: { type: Type.BOOLEAN },
+    confidence: { type: Type.NUMBER },
+    reasoning: { type: Type.STRING },
+  },
+  required: ['isScam', 'confidence'],
+};
 
 async function computePHash(buffer: Buffer): Promise<bigint> {
   const data = await sharp(buffer)
@@ -199,8 +212,37 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 async function isScamImage(buffer: Buffer): Promise<boolean> {
-  // TODO: Check for scam keywords via OCR
-  return false;
+  if (!process.env.GEMINI_API_KEY) {
+    return false;
+  }
+
+  try {
+    const base64Image = buffer.toString('base64');
+    const mimeType = 'image/png';
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        { inlineData: { data: base64Image, mimeType } },
+        'Analyze this image for scam indicators: crypto giveaway, MrBeast impersonation, fake QR codes, or phishing. Return JSON.',
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: scamSchema,
+        temperature: 0.1,
+      },
+    });
+
+    if (!response.text) {
+      throw new Error('Gemini returned an empty response');
+    }
+
+    const result = JSON.parse(response.text);
+    return result.isScam && result.confidence > 0.7;
+  } catch (err) {
+    console.error('Gemini failed:', err);
+    return false;
+  }
 }
 
 export default routes;
