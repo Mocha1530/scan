@@ -107,6 +107,7 @@ async function insertNewImage(
   sha256: string,
   phash: bigint,
   isScam: boolean,
+  imageUrl?: string,
 ): Promise<void> {
   const { error } = await supabase.from('scam_images').insert({
     sha256: sha256,
@@ -115,6 +116,7 @@ async function insertNewImage(
     metadata: {
       detected_at: new Date().toISOString(),
       detection_method: 'api_submission',
+      image_url: imageUrl,
     },
   });
 
@@ -192,7 +194,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
         const isScam = await isScamImage(buffer);
 
-        await insertNewImage(sha256, phash, isScam);
+        await insertNewImage(sha256, phash, isScam, imageInput);
         if (useCache) {
           await cache.set(
             redis as Redis,
