@@ -223,7 +223,7 @@ async function isScamImage(buffer: Buffer): Promise<boolean> {
     const mimeType = 'image/png';
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: [
         { inlineData: { data: base64Image, mimeType } },
         'Analyze this image for scam indicators: crypto giveaway, MrBeast impersonation, fake QR codes, or phishing. Return JSON.',
