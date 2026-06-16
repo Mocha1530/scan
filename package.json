@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",
+    "@fastify/rate-limit": "^11.0.0",
     "@google/genai": "^2.8.0",
     "@supabase/supabase-js": "^2.108.1",
     "@types/node": "^24.0.0",
@@ -30,6 +31,7 @@
     "dotenv": "^16.0.3",
     "fastify": "^4.10.2",
     "ioredis": "^5.2.4",
+    "p-limit": "^7.3.0",
     "reconnecting-websocket": "^4.4.0",
     "sharp": "^0.34.5",
     "ts-node": "^10.9.1",

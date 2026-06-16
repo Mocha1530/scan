@@ -3,5 +3,5 @@ export interface ScamImageRecord {
   sha256: string;
   phash: bigint;
   is_scam: boolean;
-  metadata: object;
+  metadata: Record<string, any>;
 }

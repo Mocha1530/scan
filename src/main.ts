@@ -1,8 +1,8 @@
 require('dotenv').config();
-import { createClient } from '@supabase/supabase-js';
 import Redis from 'ioredis';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
+import fastifyRateLimit from '@fastify/rate-limit';
 import fs from 'fs';
 
 import v1Routes from './routes/v1';
@@ -20,13 +20,9 @@ export const redis =
 // Set default TTL to 1 hour (3600 secons) if not provided in .env
 export const REDIS_TTL = Number(process.env.REDIS_TTL) || 3600;
 
-export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!,
-);
-
 const fastify = Fastify({
   maxParamLength: 1000,
+  bodyLimit: 10 * 1024 * 1024,
   logger: true,
 });
 (async () => {
@@ -35,6 +31,13 @@ const fastify = Fastify({
   await fastify.register(FastifyCors, {
     origin: '*',
     methods: 'GET,POST',
+  });
+
+  await fastify.register(fastifyRateLimit, {
+    max: 60,
+    timeWindow: '1 minute',
+    redis: redis || undefined,
+    skipOnError: true,
   });
 
   if (process.env.NODE_ENV === 'DEMO') {
@@ -133,6 +136,10 @@ const fastify = Fastify({
 
   await fastify.register(v1Routes, { prefix: '/v1' });
   await fastify.register(Utils, { prefix: '/utils' });
+
+  fastify.get('/_health', async (_, reply) => {
+    reply.status(200).send({ status: 'ok' });
+  });
 
   try {
     fastify.get('/', (_, rp) => {

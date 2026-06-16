@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { supabase } from '../main';
+import { supabase } from '../lib/supabase';
 import { ScamImageRecord } from '../models';
 
 async function computePHash(buffer: Buffer): Promise<bigint> {
@@ -43,39 +43,21 @@ async function findSimilarPhash(
   phash: bigint,
   threshold: number,
 ): Promise<ScamImageRecord | null> {
-  const { data, error } = await supabase
-    .from('scam_images')
-    .select('id, sha256, phash, is_scam, metadata')
-    .limit(50);
+  const { data, error } = await supabase.rpc('find_similar_phash', {
+    target_phash: phash.toString(),
+    threshold: threshold,
+  });
 
-  if (error || !data) return null;
+  if (error || !data || data.length === 0) return null;
 
-  let bestMatch: ScamImageRecord | null = null;
-  let bestDistance = threshold;
-
-  for (const row of data) {
-    const rowPhash = BigInt(row.phash);
-    const xor = phash ^ rowPhash;
-
-    let distance = 0;
-    let n = xor;
-    while (n > 0n) {
-      distance += Number(n & 1n);
-      n >>= 1n;
-    }
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestMatch = {
-        id: row.id,
-        sha256: row.sha256,
-        phash: row.phash,
-        is_scam: row.is_scam,
-        metadata: row.metadata,
-      };
-      if (distance === 0) break;
-    }
-  }
-  return bestMatch;
+  const row = data[0];
+  return {
+    id: row.id,
+    sha256: row.sha256,
+    phash: BigInt(row.phash),
+    is_scam: row.is_scam,
+    metadata: row.metadata,
+  };
 }
 
 async function insertNewImage(
