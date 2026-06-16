@@ -1,4 +1,5 @@
 require('dotenv').config();
+import { createClient } from '@supabase/supabase-js';
 import Redis from 'ioredis';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
@@ -18,6 +19,11 @@ export const redis =
 
 // Set default TTL to 1 hour (3600 secons) if not provided in .env
 export const REDIS_TTL = Number(process.env.REDIS_TTL) || 3600;
+
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!,
+);
 
 const fastify = Fastify({
   maxParamLength: 1000,

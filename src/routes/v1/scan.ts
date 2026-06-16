@@ -2,13 +2,15 @@ import { FastifyReply, FastifyInstance, RegisterOptions, FastifyRequest } from '
 
 import cache from '../../utils/cache';
 import { redis, REDIS_TTL } from '../../main';
-import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, Type } from '@google/genai';
 import Redis from 'ioredis';
-import sharp from 'sharp';
 import { createHash } from 'crypto';
-
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+import {
+  computePHash,
+  findExactMatch,
+  findSimilarPhash,
+  insertNewImage,
+} from '../../utils/functions';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -21,107 +23,6 @@ const scamSchema = {
   },
   required: ['isScam', 'confidence'],
 };
-
-async function computePHash(buffer: Buffer): Promise<bigint> {
-  const data = await sharp(buffer)
-    .resize(9, 8, { fit: 'fill' })
-    .greyscale()
-    .raw()
-    .toBuffer();
-
-  let hash = 0n;
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const left = data[row * 9 + col];
-      const right = data[row * 9 + col + 1];
-      if (left < right) {
-        hash |= 1n << BigInt(row * 8 + col);
-      }
-    }
-  }
-  return hash;
-}
-
-interface ScamImageRecord {
-  id: number;
-  sha256: string;
-  phash: bigint;
-  is_scam: boolean;
-}
-
-async function findExactMatch(sha256: string): Promise<ScamImageRecord | null> {
-  const { data, error } = await supabase
-    .from('scam_images')
-    .select('id, sha256, phash, is_scam')
-    .eq('sha256', sha256)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return {
-    id: data.id,
-    sha256: data.sha256,
-    phash: BigInt(data.phash),
-    is_scam: data.is_scam,
-  };
-}
-
-async function findSimilarPhash(
-  phash: bigint,
-  threshold: number,
-): Promise<ScamImageRecord | null> {
-  const { data, error } = await supabase
-    .from('scam_images')
-    .select('id, sha256, phash, is_scam')
-    .limit(50);
-
-  if (error || !data) return null;
-
-  let bestMatch: ScamImageRecord | null = null;
-  let bestDistance = threshold;
-
-  for (const row of data) {
-    const rowPhash = BigInt(row.phash);
-    const xor = phash ^ rowPhash;
-
-    let distance = 0;
-    let n = xor;
-    while (n > 0n) {
-      distance += Number(n & 1n);
-      n >>= 1n;
-    }
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestMatch = {
-        id: row.id,
-        sha256: row.sha256,
-        phash: row.phash,
-        is_scam: row.is_scam,
-      };
-      if (distance === 0) break;
-    }
-  }
-  return bestMatch;
-}
-
-async function insertNewImage(
-  sha256: string,
-  phash: bigint,
-  isScam: boolean,
-  imageUrl?: string,
-): Promise<void> {
-  const { error } = await supabase.from('scam_images').insert({
-    sha256: sha256,
-    phash: phash.toString(),
-    is_scam: isScam,
-    metadata: {
-      detected_at: new Date().toISOString(),
-      detection_method: 'api_submission',
-      image_url: imageUrl,
-    },
-  });
-
-  if (error) throw new Error(`Supabase insert failed: ${error.message}`);
-}
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   // fastify.get("/", ())
